@@ -1,0 +1,17 @@
+{
+  "llamaServerPath": "tools/llama.cpp/llama-server.exe",
+  "modelPath": "models/qwen2.5-coder-1.5b-instruct-q4_k_m.gguf",
+  "apiPort": 11436,
+  "autoLoadModel": true,
+  "host": "127.0.0.1",
+  "port": 11435,
+  "contextSize": 8192,
+  "gpuLayers": -1,
+  "threads": 8,
+  "batchSize": 512,
+  "temperature": 0.2,
+  "topP": 0.9,
+  "topK": 40,
+  "repeatPenalty": 1.1,
+  "maxTokens": 2048
+}

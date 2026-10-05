@@ -1,0 +1,12 @@
+{
+  "name": "localcoder",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Local GGUF coding assistant powered by llama.cpp",
+  "scripts": {
+    "server": "node server/index.js",
+    "check": "node --check server/index.js && node --check vscode-extension/extension.js && node --check vscode-extension/media/main.js",
+    "package:extension": "npm --prefix vscode-extension run package"
+  },
+  "engines": { "node": ">=20" }
+}

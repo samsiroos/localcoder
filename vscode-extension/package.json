@@ -1,0 +1,31 @@
+{
+  "name": "localcoder",
+  "displayName": "LocalCoder",
+  "description": "Private GGUF coding agent powered by llama.cpp",
+  "version": "0.6.0",
+  "publisher": "localcoder",
+  "engines": { "vscode": "^1.90.0" },
+  "categories": ["Machine Learning", "Other"],
+  "activationEvents": ["onView:localcoder.chat"],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      { "command": "localcoder.openChat", "title": "LocalCoder: Open Chat" },
+      { "command": "localcoder.configure", "title": "LocalCoder: Configure" },
+      { "command": "localcoder.manageSkills", "title": "LocalCoder: Manage Skills and Project Details" }
+    ],
+    "viewsContainers": { "activitybar": [{ "id": "localcoder", "title": "LocalCoder", "icon": "media/icon.svg" }] },
+    "views": { "localcoder": [{ "type": "webview", "id": "localcoder.chat", "name": "Chat" }] },
+    "configuration": {
+      "title": "LocalCoder",
+      "properties": {
+        "localcoder.apiUrl": { "type": "string", "default": "http://127.0.0.1:11436", "description": "LocalCoder service URL" },
+        "localcoder.appPath": { "type": "string", "default": "", "description": "Optional LocalCoder application folder. Usually detected automatically." },
+        "localcoder.agent.maxSteps": { "type": "number", "default": 8, "minimum": 1, "maximum": 30 },
+        "localcoder.agent.autoApproveEdits": { "type": "boolean", "default": false, "description": "Apply model-requested file changes without confirmation" }
+      }
+    }
+  },
+  "scripts": { "package": "npx @vscode/vsce package" },
+  "license": "MIT"
+}

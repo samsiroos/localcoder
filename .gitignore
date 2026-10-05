@@ -1,0 +1,28 @@
+# Dependencies and build output
+node_modules/
+dist/
+coverage/
+.vscode-test/
+
+# Packaged VS Code extensions
+*.vsix
+
+# LocalCoder runtime configuration, history, RAG data, and logs
+.localcoder/
+*.log
+
+# Downloaded llama.cpp runtime and archives
+tools/llama.cpp/
+downloads/
+
+# Large local model files
+models/*.gguf
+models/*.ggml
+models/*.bin
+
+# Operating-system and editor files
+.DS_Store
+Thumbs.db
+*.swp
+*.tmp
+
