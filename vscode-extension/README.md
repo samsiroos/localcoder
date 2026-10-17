@@ -1,7 +1,7 @@
 # LocalCoder
 
 <p align="center">
-  <img src="media/Cute%20Robot%20Coding.png" alt="LocalCoder robot coding mascot" width="256">
+  <img src="media/localcoder-icon.png" alt="LocalCoder robot coding mascot" width="256">
 </p>
 
 <p align="center">

@@ -2,14 +2,14 @@
   "name": "localcoder",
   "displayName": "LocalCoder",
   "description": "Private GGUF coding agent powered by llama.cpp — created by pwaapps.com",
-  "version": "0.14.2",
-  "publisher": "localcoder",
+  "version": "0.14.4",
+  "publisher": "Pwaappscom",
   "author": {
     "name": "PWA Apps",
     "url": "https://pwaapps.com"
   },
   "homepage": "https://pwaapps.com",
-  "icon": "media/Cute Robot Coding.png",
+  "icon": "media/localcoder-icon.png",
   "engines": {
     "vscode": "^1.90.0"
   },
@@ -41,7 +41,7 @@
         {
           "id": "localcoder",
           "title": "LocalCoder",
-          "icon": "media/Cute Robot Coding.png"
+          "icon": "media/localcoder-icon.png"
         }
       ]
     },
