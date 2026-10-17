@@ -36,7 +36,7 @@ LocalCoder is a private coding assistant for local GGUF models. It runs `llama-s
 
    ```powershell
    npm run package:extension
-   code --install-extension vscode-extension/localcoder-0.1.0.vsix
+   code --install-extension vscode-extension/localcoder-0.14.5.vsix
    ```
 
 Open the LocalCoder icon in the Activity Bar and start chatting.
