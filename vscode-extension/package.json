@@ -1,31 +1,96 @@
 {
   "name": "localcoder",
   "displayName": "LocalCoder",
-  "description": "Private GGUF coding agent powered by llama.cpp",
-  "version": "0.6.0",
+  "description": "Private GGUF coding agent powered by llama.cpp — created by pwaapps.com",
+  "version": "0.14.2",
   "publisher": "localcoder",
-  "engines": { "vscode": "^1.90.0" },
-  "categories": ["Machine Learning", "Other"],
-  "activationEvents": ["onView:localcoder.chat"],
+  "author": {
+    "name": "PWA Apps",
+    "url": "https://pwaapps.com"
+  },
+  "homepage": "https://pwaapps.com",
+  "icon": "media/Cute Robot Coding.png",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Machine Learning",
+    "Other"
+  ],
+  "activationEvents": [
+    "onView:localcoder.chat"
+  ],
   "main": "./extension.js",
   "contributes": {
     "commands": [
-      { "command": "localcoder.openChat", "title": "LocalCoder: Open Chat" },
-      { "command": "localcoder.configure", "title": "LocalCoder: Configure" },
-      { "command": "localcoder.manageSkills", "title": "LocalCoder: Manage Skills and Project Details" }
+      {
+        "command": "localcoder.openChat",
+        "title": "LocalCoder: Open Chat"
+      },
+      {
+        "command": "localcoder.configure",
+        "title": "LocalCoder: Configure"
+      },
+      {
+        "command": "localcoder.manageSkills",
+        "title": "LocalCoder: Manage Skills and Project Details"
+      }
     ],
-    "viewsContainers": { "activitybar": [{ "id": "localcoder", "title": "LocalCoder", "icon": "media/icon.svg" }] },
-    "views": { "localcoder": [{ "type": "webview", "id": "localcoder.chat", "name": "Chat" }] },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "localcoder",
+          "title": "LocalCoder",
+          "icon": "media/Cute Robot Coding.png"
+        }
+      ]
+    },
+    "views": {
+      "localcoder": [
+        {
+          "type": "webview",
+          "id": "localcoder.chat",
+          "name": "Chat"
+        }
+      ]
+    },
     "configuration": {
       "title": "LocalCoder",
       "properties": {
-        "localcoder.apiUrl": { "type": "string", "default": "http://127.0.0.1:11436", "description": "LocalCoder service URL" },
-        "localcoder.appPath": { "type": "string", "default": "", "description": "Optional LocalCoder application folder. Usually detected automatically." },
-        "localcoder.agent.maxSteps": { "type": "number", "default": 8, "minimum": 1, "maximum": 30 },
-        "localcoder.agent.autoApproveEdits": { "type": "boolean", "default": false, "description": "Apply model-requested file changes without confirmation" }
+        "localcoder.apiUrl": {
+          "type": "string",
+          "default": "http://127.0.0.1:11436",
+          "description": "LocalCoder service URL"
+        },
+        "localcoder.appPath": {
+          "type": "string",
+          "default": "",
+          "description": "Optional LocalCoder application folder. Usually detected automatically."
+        },
+        "localcoder.agent.maxSteps": {
+          "type": "number",
+          "default": 8,
+          "minimum": 1,
+          "maximum": 30
+        },
+        "localcoder.agent.autoApproveEdits": {
+          "type": "boolean",
+          "default": false,
+          "description": "Apply model-requested file changes without confirmation"
+        },
+        "localcoder.agent.autoApproveRuns": {
+          "type": "boolean",
+          "default": false,
+          "description": "Start and stop Node.js, Python, and .NET applications without confirmation"
+        }
       }
     }
   },
-  "scripts": { "package": "npx @vscode/vsce package" },
-  "license": "MIT"
+  "scripts": {
+    "package": "npx @vscode/vsce package --no-rewrite-relative-links"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "playwright-core": "^1.64.1"
+  }
 }

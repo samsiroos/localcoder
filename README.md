@@ -9,7 +9,9 @@ LocalCoder is a private coding assistant for local GGUF models. It runs `llama-s
 - Store reusable skills as Markdown files
 - Ingest text into a persistent local RAG index
 - Chat from the VS Code Activity Bar
-- Agent tools: read, list, search, create/edit, and move files to trash
+- Agent tools: read, list, search, create/edit, rename, and move files to trash
+- Project lifecycle tools for running, building, and publishing .NET, Node.js, React, and Docker projects
+- Open HTTP and HTTPS addresses in VS Code's internal Simple Browser
 - Workspace boundary enforcement and confirmation before writes/deletes
 
 ## Quick start

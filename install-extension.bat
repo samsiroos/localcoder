@@ -10,13 +10,13 @@ if errorlevel 1 (
   exit /b 1
 )
 
-if not exist "LocalCoder-0.6.0.vsix" (
-  echo [LocalCoder] Missing LocalCoder-0.6.0.vsix
+if not exist "LocalCoder-0.14.2.vsix" (
+  echo [LocalCoder] Missing LocalCoder-0.14.2.vsix
   pause
   exit /b 1
 )
 
-call code.cmd --install-extension "%~dp0LocalCoder-0.6.0.vsix" --force
+call code.cmd --install-extension "%~dp0LocalCoder-0.14.2.vsix" --force
 if errorlevel 1 (
   echo [LocalCoder] Extension installation failed.
   pause

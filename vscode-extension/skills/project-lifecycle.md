@@ -1,0 +1,9 @@
+# Project run, build, and publish
+
+- Inspect the project directory and its manifests before selecting a command: `.csproj`, `.sln`, `package.json`, lockfiles, `Dockerfile`, and Compose files. Read scripts and documented options; never guess a script name when it can be verified.
+- Use `project_command` for foreground run, build, and publish operations. Set `path` to the directory containing the relevant manifest. Report the exact command, exit code, and important output.
+- .NET: restore/build with the installed SDK conventions. Use `dotnet run` for applications, `dotnet build` for validation, and `dotnet publish` for deployable output. Pass project/configuration/runtime/output options through `args` only when the project requires them.
+- Node.js: respect the detected lockfile and `package.json` scripts. Install dependencies only when required and requested. Use the actual start/build script. Treat `npm publish` as an external release and verify package name, version, registry, authentication, and dry-run expectations first.
+- React: determine the framework from dependencies and scripts (for example Vite, Next.js, Create React App, or another framework). Development servers usually use the `dev` or `start` script; production output uses the manifest's build script. Do not assume every React project is a static site or publish it with `npm publish` unless it is a library package.
+- Docker: inspect Dockerfile stages, `.dockerignore`, Compose configuration, image naming, exposed ports, and required build arguments. Use Compose for multi-container runs, `docker build` for images, and `docker push` only after confirming the fully qualified registry/image tag exists locally.
+- Publishing can modify registries or create deployable artifacts. Explain the destination and ask for the normal command confirmation. Never claim a run, build, or publish succeeded unless the tool returns exit code 0.

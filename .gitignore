@@ -1,8 +1,21 @@
 # Dependencies and build output
 node_modules/
 dist/
+build/
+out/
 coverage/
 .vscode-test/
+.nyc_output/
+.cache/
+*.tsbuildinfo
+
+# Package-manager diagnostics and caches
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.npm/
+.pnpm-store/
 
 # Packaged VS Code extensions
 *.vsix
@@ -10,6 +23,12 @@ coverage/
 # LocalCoder runtime configuration, history, RAG data, and logs
 .localcoder/
 *.log
+
+# Local environment files and secrets
+.env
+.env.*
+!.env.example
+!.env.*.example
 
 # Downloaded llama.cpp runtime and archives
 tools/llama.cpp/
@@ -23,6 +42,13 @@ models/*.bin
 # Operating-system and editor files
 .DS_Store
 Thumbs.db
+Desktop.ini
+.idea/
+.vscode/
+*.code-workspace
 *.swp
+*.swo
+*~
 *.tmp
+*.temp
 

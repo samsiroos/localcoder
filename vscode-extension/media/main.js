@@ -7,6 +7,31 @@ const send = document.getElementById('send');
 const stop = document.getElementById('stop');
 const state = document.getElementById('state');
 const dot = document.getElementById('dot');
+const activity = document.getElementById('activity');
+const activityText = document.getElementById('activityText');
+const activityTime = document.getElementById('activityTime');
+let activityStartedAt = 0;
+let activityTimer;
+
+function formatDuration(milliseconds) {
+  if (!Number.isFinite(milliseconds)) return '';
+  if (milliseconds < 60000) return `${(milliseconds / 1000).toFixed(1)}s`;
+  const minutes = Math.floor(milliseconds / 60000);
+  return `${minutes}m ${((milliseconds % 60000) / 1000).toFixed(0)}s`;
+}
+
+function setBusy(message) {
+  send.disabled = message.value;
+  stop.disabled = !message.value;
+  clearInterval(activityTimer);
+  if (!message.value) { activity.style.display = 'none'; return; }
+  activityStartedAt = message.startedAt || Date.now();
+  activityText.textContent = 'Local model is thinking';
+  activity.style.display = 'block';
+  const tick = () => { activityTime.textContent = formatDuration(Date.now() - activityStartedAt); };
+  tick();
+  activityTimer = setInterval(tick, 100);
+}
 
 function add(className, text, copyable = false) {
   const element = document.createElement('div');
@@ -68,10 +93,14 @@ send.addEventListener('click', () => {
   input.value = '';
 });
 input.addEventListener('keydown', event => {
-  if (event.ctrlKey && event.key === 'Enter') send.click();
+  if (event.key === 'Enter' && !event.shiftKey) {
+    event.preventDefault();
+    send.click();
+  }
 });
 document.getElementById('clear').addEventListener('click', () => vscode.postMessage({ type: 'clear' }));
 document.getElementById('refresh').addEventListener('click', () => vscode.postMessage({ type: 'refresh' }));
+document.getElementById('homepage').addEventListener('click', () => vscode.postMessage({ type: 'openHomepage' }));
 document.getElementById('skills').addEventListener('click', () => vscode.postMessage({ type: 'manageSkills' }));
 stop.addEventListener('click', () => vscode.postMessage({ type: 'stop' }));
 
@@ -79,13 +108,15 @@ function renderMessage(message) {
   if (message.type === 'user') add('user', message.text, true);
   if (message.type === 'assistant') {
     const sources = message.sources?.length ? `\n\nSources: ${message.sources.map(source => source.source).join(', ')}` : '';
-    add('assistant', message.text + sources, true);
+    const duration = message.durationMs ? `\n\nCompleted in ${formatDuration(message.durationMs)}` : '';
+    add('assistant', message.text + sources + duration, true);
   }
   if (message.type === 'tool') add('tool', `Tool: ${message.text}`);
   if (message.type === 'change') addChange(message.change);
   if (message.type === 'error') add('error', message.text);
   if (message.type === 'cleared') chat.innerHTML = '';
-  if (message.type === 'busy') { send.disabled = message.value; stop.disabled = !message.value; }
+  if (message.type === 'busy') setBusy(message);
+  if (message.type === 'phase') activityText.textContent = message.text;
   if (message.type === 'status') {
     const ready = message.value.ready;
     dot.className = `dot ${ready ? 'ok' : ''}`;
