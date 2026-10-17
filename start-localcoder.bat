@@ -18,10 +18,22 @@ if not exist "tools\llama.cpp\llama-server.exe" (
 )
 
 if not exist "models\qwen2.5-coder-1.5b-instruct-q4_k_m.gguf" (
-  echo [LocalCoder] Missing default GGUF model in the models directory.
-  echo Copy the complete LocalCoder folder, including the model.
-  pause
-  exit /b 1
+  echo [LocalCoder] Default model is missing. Downloading Qwen2.5-Coder 1.5B...
+  if not exist "models" mkdir "models"
+  curl.exe --fail --location --retry 3 --output "models\qwen2.5-coder-1.5b-instruct-q4_k_m.gguf.tmp" "https://huggingface.co/bartowski/Qwen2.5-Coder-1.5B-Instruct-GGUF/resolve/main/Qwen2.5-Coder-1.5B-Instruct-Q4_K_M.gguf"
+  if errorlevel 1 (
+    echo [LocalCoder] Model download failed. Check your internet connection and run this file again.
+    if exist "models\qwen2.5-coder-1.5b-instruct-q4_k_m.gguf.tmp" del "models\qwen2.5-coder-1.5b-instruct-q4_k_m.gguf.tmp"
+    pause
+    exit /b 1
+  )
+  move /y "models\qwen2.5-coder-1.5b-instruct-q4_k_m.gguf.tmp" "models\qwen2.5-coder-1.5b-instruct-q4_k_m.gguf" >nul
+  if errorlevel 1 (
+    echo [LocalCoder] Could not install the downloaded model in the models directory.
+    pause
+    exit /b 1
+  )
+  echo [LocalCoder] Model downloaded successfully.
 )
 
 powershell.exe -NoProfile -Command "try { Invoke-RestMethod -TimeoutSec 2 -Uri 'http://127.0.0.1:11436/api/status' | Out-Null; exit 0 } catch { exit 1 }"
@@ -42,4 +54,3 @@ node server\index.js
 echo.
 echo [LocalCoder] Server stopped.
 pause
-

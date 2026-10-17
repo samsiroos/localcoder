@@ -1,7 +1,7 @@
 # LocalCoder
 
 <p align="center">
-  <img src="media/localcoder-icon.png" alt="LocalCoder robot coding mascot" width="256">
+  <img src="https://pwaapps.com/image/LocalCoder.png" alt="LocalCoder robot coding mascot" width="256">
 </p>
 
 <p align="center">
@@ -14,6 +14,7 @@ LocalCoder runs GGUF coding models through llama.cpp and works directly with the
 ## Features
 
 - Read, search, create, update, rename, and delete workspace files with safety checks.
+- Read, search, create, and update files in the LocalCoder installation's `tools` folder.
 - Require confirmation before file changes, application execution, browser actions, API mutations, and downloads.
 - Run, build, and publish .NET, Node.js, React, and Docker projects.
 - Preview workspace HTML files in VS Code's internal browser.
@@ -41,7 +42,8 @@ Capture mobile and desktop screenshots of https://pwaapps.com.
 
 ## Safety and privacy
 
-- File tools are restricted to the open workspace.
+- File tools are restricted to the open workspace, with read/search/create/update access to the LocalCoder installation's `tools` folder.
+- The `tools` folder exception does not allow rename or delete operations outside the open workspace.
 - Existing files are read before updates, renames, or deletions.
 - Deleted files use the operating-system trash when supported.
 - External mutations and downloads require confirmation.

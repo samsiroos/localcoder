@@ -130,6 +130,7 @@ async function findAppRoot(context) {
 }
 async function ensureLocalCoder(context) {
   let status;
+  let modelStartError = '';
   try { status = await api('/api/status'); } catch { /* start the bundled service */ }
   if (!status) {
     const root = await findAppRoot(context);
@@ -144,10 +145,18 @@ async function ensureLocalCoder(context) {
       if (status.ready) return status;
       if (!status.running) {
         try { await api('/api/model/load', { method: 'POST', body: '{}' }); }
-        catch (error) { if (!String(error.message).includes('already running')) throw error; }
+        catch (error) {
+          if (!String(error.message).includes('already running')) {
+            modelStartError = error.message;
+            break;
+          }
+        }
       }
     } catch { /* still starting */ }
     await new Promise(resolve => setTimeout(resolve, 1000));
+  }
+  if (status && !status.running) {
+    throw new Error(`The LocalCoder service started, but llama-server is not running. Run start-localcoder.bat to download the default model and start the server.${modelStartError ? ` ${modelStartError}` : ''}`);
   }
   if (status) return status;
   throw new Error('LocalCoder did not start. Check that Node.js is installed and localcoder.appPath is correct.');
@@ -163,6 +172,20 @@ function safePath(relative = '.') {
   const rel = path.relative(root, result);
   if (rel.startsWith('..') || path.isAbsolute(rel)) throw new Error('Path is outside the workspace');
   return result;
+}
+function safeFileToolPath(value = '.', toolsDirectory) {
+  const root = workspaceRoot();
+  const result = path.resolve(root, value);
+  const workspaceRelative = path.relative(root, result);
+  if (isWithinPath(root, result)) return result;
+  if (toolsDirectory && path.isAbsolute(value)) {
+    if (isWithinPath(toolsDirectory, result)) return result;
+  }
+  throw new Error('Path is outside the workspace and LocalCoder tools folder');
+}
+function isWithinPath(directory, target) {
+  const relative = path.relative(directory, target);
+  return relative === '' || (relative !== '..' && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative));
 }
 function safeSkillName(name) {
   const clean = String(name || '').trim().replace(/[^a-zA-Z0-9_-]/g, '-');
@@ -436,31 +459,39 @@ async function workspacePreviewUrl(root, relativePath) {
   const encodedPath = relativePath.replace(/\\/g, '/').split('/').map(encodeURIComponent).join('/');
   return `http://127.0.0.1:${preview.port}/${preview.token}/${encodedPath}`;
 }
-async function runTool(call, onChange = () => {}, readPaths = new Set()) {
+async function runTool(call, onChange = () => {}, readPaths = new Set(), toolsDirectory) {
   const root = workspaceRoot();
   if (call.tool === 'read_file') {
-    const target = safePath(call.path);
+    const target = safeFileToolPath(call.path, toolsDirectory);
     const content = (await fs.readFile(target, 'utf8')).slice(0, 80000);
     readPaths.add(path.relative(root, target).toLowerCase());
     return content;
   }
   if (call.tool === 'list_files') {
-    const files = []; await collectFiles(safePath(call.path || '.'), root, files); return files.join('\n');
+    const directory = safeFileToolPath(call.path || '.', toolsDirectory);
+    const externalToolsDirectory = toolsDirectory && !isWithinPath(root, directory);
+    const filesRoot = externalToolsDirectory ? toolsDirectory : root;
+    const files = []; await collectFiles(directory, filesRoot, files);
+    return files.map(file => externalToolsDirectory ? path.join(filesRoot, file) : file).join('\n');
   }
   if (call.tool === 'search') {
-    const files = []; await collectFiles(safePath(call.path || '.'), root, files);
+    const directory = safeFileToolPath(call.path || '.', toolsDirectory);
+    const externalToolsDirectory = toolsDirectory && !isWithinPath(root, directory);
+    const filesRoot = externalToolsDirectory ? toolsDirectory : root;
+    const files = []; await collectFiles(directory, filesRoot, files);
     const hits = [];
     for (const file of files) {
       try {
-        const content = await fs.readFile(path.join(root, file), 'utf8');
-        content.split(/\r?\n/).forEach((line, i) => { if (line.toLowerCase().includes(String(call.query).toLowerCase()) && hits.length < 200) hits.push(`${file}:${i + 1}: ${line.trim()}`); });
+        const content = await fs.readFile(path.join(filesRoot, file), 'utf8');
+        const displayPath = externalToolsDirectory ? path.join(filesRoot, file) : file;
+        content.split(/\r?\n/).forEach((line, i) => { if (line.toLowerCase().includes(String(call.query).toLowerCase()) && hits.length < 200) hits.push(`${displayPath}:${i + 1}: ${line.trim()}`); });
       } catch { /* binary/unreadable */ }
     }
     return hits.join('\n') || 'No matches';
   }
   if (call.tool === 'write_file') {
     if (isPlaceholderPath(call.path)) return `Tool error: Refused placeholder file path: ${call.path}`;
-    const target = safePath(call.path);
+    const target = safeFileToolPath(call.path, toolsDirectory);
     const uri = vscode.Uri.file(target); let old = ''; let existed = true;
     try { old = await fs.readFile(target, 'utf8'); } catch { existed = false; }
     const relativeTarget = path.relative(root, target).toLowerCase();
@@ -741,7 +772,14 @@ class ChatProvider {
   async refreshStatus(autoStart = false) {
     this.post({ type: 'status', value: { starting: true } });
     try { this.post({ type: 'status', value: autoStart ? await ensureLocalCoder(this.context) : await api('/api/status') }); }
-    catch (e) { this.post({ type: 'status', value: { ready: false, error: e.message } }); }
+    catch (e) {
+      const message = `LocalCoder server is unavailable: ${e.message}. Download the LocalCoder project from GitHub and run start-localcoder.bat: https://github.com/samsiroos/localcoder`;
+      this.post({ type: 'status', value: { ready: false, error: message } });
+      if (autoStart) {
+        const action = await vscode.window.showErrorMessage(message, 'Open GitHub');
+        if (action === 'Open GitHub') await vscode.env.openExternal(vscode.Uri.parse('https://github.com/samsiroos/localcoder'));
+      }
+    }
   }
   async receive(message) {
     try {
@@ -815,10 +853,13 @@ class ChatProvider {
     }
     return openMarkdown(path.join(directory, `${name}.md`), `# ${name}\n\nDescribe the instructions LocalCoder should follow.\n`);
   }
-  async messagesForRequest() {
+  async messagesForRequest(toolsDirectory) {
     const messages = [...this.history];
     const root = workspaceRoot();
     const contextParts = [];
+    if (toolsDirectory) {
+      contextParts.push(`## LocalCoder tools directory\nYou may read, list, search, create, and edit files inside ${toolsDirectory} using absolute paths. This exception does not allow access to other paths outside the open workspace, and rename/delete operations remain restricted to the open workspace.`);
+    }
     const bundledSkillsDirectory = path.join(this.context.extensionPath, 'skills');
     for (const file of await markdownFiles(bundledSkillsDirectory)) {
       const content = await fs.readFile(path.join(bundledSkillsDirectory, file), 'utf8');
@@ -858,6 +899,11 @@ class ChatProvider {
     let successfulChanges = 0;
     const verifiedChanges = [];
     try {
+      let toolsDirectory;
+      try { toolsDirectory = path.join(await findAppRoot(this.context), 'tools'); }
+      catch (error) {
+        if (!(error instanceof Error) || error.message !== 'Cannot find LocalCoder server. Set localcoder.appPath to the LocalCoder folder.') throw error;
+      }
       const localBrowserPath = requestedLocalBrowserFile(text);
       if (localBrowserPath) {
         this.post({ type: 'phase', text: `Opening ${localBrowserPath} in local browser` });
@@ -897,7 +943,7 @@ class ChatProvider {
       }
       for (let step = 0; step < maxSteps; step++) {
         this.post({ type: 'phase', text: step === 0 ? 'Local model is thinking' : 'Local model is continuing' });
-        const result = await api('/api/chat', { method: 'POST', body: JSON.stringify({ messages: await this.messagesForRequest(), useRag: true }), signal: this.currentController.signal });
+        const result = await api('/api/chat', { method: 'POST', body: JSON.stringify({ messages: await this.messagesForRequest(toolsDirectory), useRag: true }), signal: this.currentController.signal });
         const answer = result.choices?.[0]?.message?.content || '';
         this.output.appendLine(`[${new Date().toISOString()}] model response\n${answer}\n`);
         this.history.push({ role: 'assistant', content: answer });
@@ -925,13 +971,13 @@ class ChatProvider {
             this.emit({ type: 'tool', text: `Recovered generated content and requested write_file: ${generatedPath}` });
             let output;
             try {
-              const generatedTarget = safePath(generatedPath);
+              const generatedTarget = safeFileToolPath(generatedPath, toolsDirectory);
               if (await exists(generatedTarget)) {
                 this.post({ type: 'phase', text: `Reading existing ${generatedPath} before update` });
-                await runTool({ tool: 'read_file', path: generatedPath }, () => {}, readPaths);
+                await runTool({ tool: 'read_file', path: generatedPath }, () => {}, readPaths, toolsDirectory);
                 this.emit({ type: 'tool', text: `Verified existing file before update: ${generatedPath}` });
               }
-              output = await runTool({ tool: 'write_file', path: generatedPath, content: generatedContent }, change => { successfulChanges++; verifiedChanges.push(change); this.emit({ type: 'change', change }); }, readPaths);
+              output = await runTool({ tool: 'write_file', path: generatedPath, content: generatedContent }, change => { successfulChanges++; verifiedChanges.push(change); this.emit({ type: 'change', change }); }, readPaths, toolsDirectory);
             }
             catch (error) { output = `Tool error: ${error.message}`; }
             this.history.push({ role: 'user', content: `Tool result:\n${output}` });
@@ -973,11 +1019,11 @@ class ChatProvider {
         }
         this.history[this.history.length - 1] = { role: 'assistant', content: `Tool call: ${tool.tool} ${tool.path || tool.query || ''}`.trim() };
         if (tool.tool === 'write_file' && !isPlaceholderPath(tool.path)) {
-          const writeTarget = safePath(tool.path);
+          const writeTarget = safeFileToolPath(tool.path, toolsDirectory);
           const relativeWriteTarget = path.relative(workspaceRoot(), writeTarget).toLowerCase();
           if (await exists(writeTarget) && !readPaths.has(relativeWriteTarget)) {
             this.post({ type: 'phase', text: `Reading existing ${tool.path} before update` });
-            await runTool({ tool: 'read_file', path: tool.path }, () => {}, readPaths);
+            await runTool({ tool: 'read_file', path: tool.path }, () => {}, readPaths, toolsDirectory);
             this.emit({ type: 'tool', text: `Verified existing file before update: ${tool.path}` });
           }
         }
@@ -998,7 +1044,7 @@ class ChatProvider {
         this.post({ type: 'phase', text: `Running tool: ${tool.tool}` });
         this.emit({ type: 'tool', text: `${tool.tool}: ${tool.path || tool.query || ''}` });
         let output;
-        try { output = await runTool(tool, change => { successfulChanges++; verifiedChanges.push(change); this.emit({ type: 'change', change }); }, readPaths); } catch (e) { output = `Tool error: ${e.message}`; }
+        try { output = await runTool(tool, change => { successfulChanges++; verifiedChanges.push(change); this.emit({ type: 'change', change }); }, readPaths, toolsDirectory); } catch (e) { output = `Tool error: ${e.message}`; }
         this.history.push({ role: 'user', content: `Tool result:\n${output}` });
         this.persist();
         if (output.startsWith('No change:')) {

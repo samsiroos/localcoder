@@ -10,13 +10,14 @@ if errorlevel 1 (
   exit /b 1
 )
 
-if not exist "LocalCoder-0.14.2.vsix" (
-  echo [LocalCoder] Missing LocalCoder-0.14.2.vsix
+if not exist "vscode-extension\localcoder-0.14.6.vsix" (
+  echo [LocalCoder] Missing vscode-extension\localcoder-0.14.6.vsix
+  echo Run npm run package:extension from the LocalCoder folder first.
   pause
   exit /b 1
 )
 
-call code.cmd --install-extension "%~dp0LocalCoder-0.14.2.vsix" --force
+call code.cmd --install-extension "%~dp0vscode-extension\localcoder-0.14.6.vsix" --force
 if errorlevel 1 (
   echo [LocalCoder] Extension installation failed.
   pause
@@ -27,4 +28,3 @@ echo.
 echo [LocalCoder] Extension installed successfully.
 echo Restart VS Code, open a project folder, and select LocalCoder from the Activity Bar.
 pause
-
