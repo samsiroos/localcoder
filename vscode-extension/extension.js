@@ -216,10 +216,16 @@ async function markdownFiles(directory) {
   try { return (await fs.readdir(directory)).filter(name => name.toLowerCase().endsWith('.md')).sort(); }
   catch { return []; }
 }
+const SUPPORTED_TOOLS = ['read_file', 'list_files', 'search', 'write_file', 'delete_file', 'rename_file', 'start_app', 'stop_app', 'project_command', 'open_url', 'open_local_file', 'browser_screenshot', 'browser_inspect', 'browser_action', 'browser_set_css', 'http_request', 'download_file'];
+
 function parseTool(text) {
   const raw = String(text).trim();
-  const simpleXml = /<(read_file|list_files|delete_file)\s+path=(['"])(.*?)\2\s*\/?>/i.exec(raw);
-  if (simpleXml) return { tool: simpleXml[1].toLowerCase(), path: simpleXml[3] };
+  const simpleXml = /<(read_file|list_files|delete_file|rename_file|open_url|open_local_file|browser_screenshot|browser_inspect|browser_action|browser_set_css|download_file)\s+([^>]*)\s*\/?>/i.exec(raw);
+  if (simpleXml) {
+    const tool = simpleXml[1].toLowerCase();
+    const attributes = {}; for (const match of simpleXml[2].matchAll(/(\w+)=(['"])(.*?)\2/g)) attributes[match[1]] = match[3];
+    if (attributes.path || attributes.newPath || attributes.url) return { tool, ...(attributes.path ? { path: attributes.path } : {}), ...(attributes.newPath ? { newPath: attributes.newPath } : {}), ...(attributes.url ? { url: attributes.url } : {}) };
+  }
   const searchXml = /<search\s+query=(['"])(.*?)\1(?:\s+path=(['"])(.*?)\3)?\s*\/?>/i.exec(raw);
   if (searchXml) return { tool: 'search', query: searchXml[2], ...(searchXml[4] ? { path: searchXml[4] } : {}) };
   const block = /<write_file\s+path=(['"])(.*?)\1\s*>([\s\S]*?)<\/write_file>/i.exec(raw);
@@ -282,9 +288,9 @@ function looseString(text, key) {
 }
 function parseLooseTool(text) {
   const tool = looseString(text, 'tool') || /["']tool["']\s*:\s*["']([^"']+)["']/i.exec(text)?.[1];
-  if (!tool || !['read_file', 'list_files', 'search', 'write_file', 'delete_file', 'start_app', 'stop_app'].includes(tool)) return null;
+  if (!tool || !SUPPORTED_TOOLS.includes(tool)) return null;
   const value = { tool };
-  for (const key of ['path', 'query', 'content']) {
+  for (const key of ['path', 'query', 'content', 'newPath', 'url', 'method', 'action', 'runtime', 'entry', 'selector', 'value', 'css', 'ecosystem', 'body', 'profile', 'args']) {
     const field = looseString(text, key);
     if (field !== undefined) value[key] = field;
   }
@@ -297,6 +303,7 @@ function parseLooseTool(text) {
     }
   }
   if (tool === 'write_file' && (typeof value.path !== 'string' || typeof value.content !== 'string')) return null;
+  if (tool === 'rename_file' && (typeof value.path !== 'string' || typeof value.newPath !== 'string')) return null;
   return value;
 }
 function decodeLooseString(value) {
