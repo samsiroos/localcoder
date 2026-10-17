@@ -41,7 +41,7 @@ LocalCoder is a private coding assistant for local GGUF models. It runs `llama-s
 
 Open the LocalCoder icon in the Activity Bar and start chatting.
 
-On Windows, `start-localcoder.bat` downloads the default Qwen2.5-Coder 1.5B GGUF into `models` on first run if it is missing. This initial download requires an internet connection.
+On Windows, `start-localcoder.bat` downloads the default Qwen2.5-Coder 1.5B GGUF into `models` on first run if it is missing, configures it as the startup model, and loads it if the LocalCoder service is already running. This initial download requires an internet connection.
 
 ## Install on another Windows computer
 
@@ -52,7 +52,7 @@ Copy the complete `localcoder` folder to the other computer. The folder must inc
 3. Keep its console window open, open any project folder in VS Code, and select LocalCoder in the Activity Bar.
 4. Run `stop-localcoder.bat` to unload the model and stop the local service.
 
-If the default GGUF is missing, `start-localcoder.bat` downloads it into `models` before starting the service. The first download requires internet access; later runs use the local copy. The llama.cpp and GGUF paths are relative to the application directory, so the copied folder can live anywhere.
+If the default GGUF is missing, `start-localcoder.bat` downloads it into `models` before starting the service. It configures that GGUF as the startup model and loads it when the service is already running. The first download requires internet access; later runs use the local copy. The llama.cpp and GGUF paths are relative to the application directory, so the copied folder can live anywhere.
 
 ## Project details and skills
 

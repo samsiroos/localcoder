@@ -37,16 +37,30 @@ if not exist "models\qwen2.5-coder-1.5b-instruct-q4_k_m.gguf" (
 )
 
 powershell.exe -NoProfile -Command "try { Invoke-RestMethod -TimeoutSec 2 -Uri 'http://127.0.0.1:11436/api/status' | Out-Null; exit 0 } catch { exit 1 }"
-if errorlevel 1 goto start_server
+if errorlevel 1 goto configure_server
 
-echo [LocalCoder] AI server is already running. The model loads automatically.
+echo [LocalCoder] Loading Qwen2.5-Coder 1.5B...
+powershell.exe -NoProfile -Command "$ErrorActionPreference='Stop'; $base='http://127.0.0.1:11436'; try { Invoke-RestMethod -Method Post -TimeoutSec 10 -Uri ($base + '/api/model/unload') | Out-Null; $deadline=(Get-Date).AddSeconds(30); do { Start-Sleep -Seconds 2; $status=Invoke-RestMethod -TimeoutSec 5 -Uri ($base + '/api/status') } while ($status.ready -and (Get-Date) -lt $deadline); if ($status.ready) { throw 'The currently loaded model did not stop.' }; Invoke-RestMethod -Method Post -TimeoutSec 10 -ContentType 'application/json' -Uri ($base + '/api/model/load') -Body (@{ modelPath='models/qwen2.5-coder-1.5b-instruct-q4_k_m.gguf' } | ConvertTo-Json -Compress) | Out-Null; $deadline=(Get-Date).AddMinutes(2); do { Start-Sleep -Seconds 2; $status=Invoke-RestMethod -TimeoutSec 5 -Uri ($base + '/api/status'); if ($status.ready -and $status.config.modelPath -eq 'models/qwen2.5-coder-1.5b-instruct-q4_k_m.gguf') { Write-Output '[LocalCoder] Qwen2.5-Coder 1.5B is loaded and ready.'; exit 0 } } while ((Get-Date) -lt $deadline); throw 'Qwen2.5-Coder 1.5B did not become ready within 2 minutes.' } catch { Write-Error $_; exit 1 }"
+if errorlevel 1 (
+  echo [LocalCoder] Could not load the required Qwen2.5-Coder model.
+  pause
+  exit /b 1
+)
 echo You can open VS Code and use the LocalCoder panel.
 echo Run stop-localcoder.bat when you want to stop the service.
 pause
 exit /b 0
 
+:configure_server
+powershell.exe -NoProfile -Command "$ErrorActionPreference='Stop'; $configPath=Join-Path (Get-Location) '.localcoder\config.json'; New-Item -ItemType Directory -Force -Path (Split-Path $configPath) | Out-Null; if (Test-Path $configPath) { $config=Get-Content -Raw $configPath | ConvertFrom-Json } else { $config=[pscustomobject]@{} }; $config | Add-Member -NotePropertyName modelPath -NotePropertyValue 'models/qwen2.5-coder-1.5b-instruct-q4_k_m.gguf' -Force; $config | Add-Member -NotePropertyName autoLoadModel -NotePropertyValue $true -Force; [System.IO.File]::WriteAllText($configPath, ($config | ConvertTo-Json -Depth 20), [System.Text.UTF8Encoding]::new($false))"
+if errorlevel 1 (
+  echo [LocalCoder] Could not configure the required Qwen2.5-Coder model.
+  pause
+  exit /b 1
+)
+
 :start_server
-echo [LocalCoder] Starting offline AI server...
+echo [LocalCoder] Starting offline AI server with Qwen2.5-Coder 1.5B...
 echo [LocalCoder] Keep this window open. Press Ctrl+C to stop.
 echo [LocalCoder] You can also run stop-localcoder.bat from another window.
 echo.
